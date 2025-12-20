@@ -1,13 +1,19 @@
-# MuffinStore Jailed
+# PancakeStore
+**MuffinStore Jailed, but with a proper UI. iOS 16.4 and later.**
 
-Hacked together on-device App Store client, view it more-so as a PoC than as a final tool.
+[Latest Release](https://github.com/jailbreakdotparty/PancakeStore/releases/latest) • [Support Server](https://jailbreak.party/discord) • [Website](https://jailbreak.party) • [Original Project (by mineek)](https://github.com/mineek/MuffinStoreJailed-Public)
+>[!WARNING]
+>Use this tool at your own risk! You may lose app data, and other damage could occur.
 
-Publicizing because it could be useful for some people, however please use TrollStore MuffinStore over this if you can. This is not meant to be a final product, but it can be helpful for some people.
+## Features
+- Downgrade most applications available on the App Store (you will need to input the link to the app store app).
 
-The UI is a bit scuffed, there's no progress bar during downgrading so just wait on the screen until you get a popup that requests installation ( the time this takes depends on how big the app is, so please wait. ), and then after you press install wait like ~5 more seconds and then you can return to SpringBoard to see the app downgrade being finalized.
-
-I am not responsible for any issues caused by the usage of this tool, it's experimental and I will not be held accountable if anything happens. Use at your own risk. Although nothing should happen, just putting this here just in case.
-
-The app you want to downgrade will need to be uninstalled, however, you can preserve app data by offloading the app first, and then downgrading it.
-
-You should request a 2fa code BEFORE logging in, via the Settings app, however, if the settings app doesn't show the option ( iOS 18+ ), you can leave the code field empty, and then you should get a popup, accept it, and copy the code from there. If it doesn't log you in fully close and re-open the app and try again.
+## How do I downgrade an application?
+1. The application you want to downgrade will need to be uninstalled. If you want to keep the app data, offload the app first.
+2. Install PancakeStore using your preferred sideloading method.
+3. Log in your Apple ID, and click "Send 2FA Code." If you can, try sending a 2FA code before logging in (there should be this in the settings app, but it was removed in iOS 18?).
+4. In most cases, you should get a popup. Accept the new login, and copy the verification code into the 2FA field. If you don't get that popup, type six random numbers into the 2FA field. I assume this works because you must've logged into MuffinStoreJailed/PancakeStore at a different time. 
+5. Click "log in" and go to the App Store.
+6. Find the application you're looking for, click the share button, and copy the link.
+7. Go back to PancakeStore and click the clipboard button.
+8. Click "Downgrade App" and wait patiently!

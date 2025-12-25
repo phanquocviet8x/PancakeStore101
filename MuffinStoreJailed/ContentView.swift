@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PartyUI
 
 struct ContentView: View {
     @State var ipaTool: IPATool?
@@ -29,16 +30,14 @@ struct ContentView: View {
         NavigationStack {
             List {
                 if showLogs {
-                    Section(header: LabelStyle(text: "Logs", icon: "terminal")) {
-                        GlassyTerminal {
-                            LogView()
-                        }
+                    Section(header: ButtonLabel(text: "Logs", icon: "terminal")) {
+                        TerminalContainer(content: LogView())
                     }
                 }
                 // login page view
                 if !isAuthenticated {
-                    Section(header: HeaderStyle(text: "Apple ID", icon: "icloud"), footer: Text("Created by [mineek](https://github.com/mineek/MuffinStoreJailed-Public), UI modifications done by lunginspector for [jailbreak.party](https://github.com/jailbreakdotparty). Use this tool at your own risk! App data may be lost, and other damage could occur.")) {
-                        VStack {
+                    Section(header: HeaderLabel(text: "Apple ID", icon: "icloud"), footer: Text("Created by [mineek](https://github.com/mineek/MuffinStoreJailed-Public), UI modifications done by lunginspector for [jailbreak.party](https://github.com/jailbreakdotparty). Use this tool at your own risk! App data may be lost, and other damage could occur.")) {
+                        VStack(spacing: 12) {
                             TextField("Email Address", text: $appleId)
                                 .autocapitalization(.none)
                                 .disableAutocorrection(true)
@@ -67,7 +66,7 @@ struct ContentView: View {
                         }
                     }
                     if hasSent2FACode {
-                        Section(header: HeaderStyle(text: "2FA Code", icon: "key"), footer: Text("If you did not receive a notification on any of the devices that are trusted to receive verification codes, type in six random numbers into the field. Trust me.")) {
+                        Section(header: HeaderLabel(text: "2FA Code", icon: "key"), footer: Text("If you did not receive a notification on any of the devices that are trusted to receive verification codes, type in six random numbers into the field. Trust me.")) {
                             TextField("2FA Code", text: $code)
                                 .autocapitalization(.none)
                                 .disableAutocorrection(true)
@@ -90,7 +89,7 @@ struct ContentView: View {
                         }
                     } else {
                         // input the stupid app link or whatever view
-                        Section(header: HeaderStyle(text: "Downgrade App", icon: "arrow.down.app"), footer: Text("Created by [mineek](https://github.com/mineek/MuffinStoreJailed-Public), UI modifications done by lunginspector for [jailbreak.party](https://github.com/jailbreakdotparty). Use this tool at your own risk! App data may be lost, and other damage could occur.")) {
+                        Section(header: HeaderLabel(text: "Downgrade App", icon: "arrow.down.app"), footer: Text("Created by [mineek](https://github.com/mineek/MuffinStoreJailed-Public), UI modifications done by lunginspector for [jailbreak.party](https://github.com/jailbreakdotparty). Use this tool at your own risk! App data may be lost, and other damage could occur.")) {
                             HStack {
                                 TextField("Link to App Store App", text: $appLink)
                                     .autocapitalization(.none)
@@ -111,7 +110,7 @@ struct ContentView: View {
             }
             .navigationTitle("PancakeStore")
             .safeAreaInset(edge: .bottom) {
-                VStack {
+                OverlayButtonContainer(content: VStack(spacing: 12) {
                     // i hate this.
                     if !isAuthenticated {
                         Button(action: {
@@ -133,9 +132,9 @@ struct ContentView: View {
                             }
                         }) {
                             if hasSent2FACode {
-                                LabelStyle(text: "Log In", icon: "arrow.right")
+                                ButtonLabel(text: "Log In", icon: "arrow.right")
                             } else {
-                                LabelStyle(text: "Send 2FA Code", icon: "key")
+                                ButtonLabel(text: "Send 2FA Code", icon: "key")
                             }
                         }
                         .buttonStyle(GlassyButtonStyle(isDisabled: hasSent2FACode ? code.isEmpty : false, isMaterialButton: true))
@@ -147,7 +146,7 @@ struct ContentView: View {
                                     exitinator()
                                 }
                             }) {
-                                LabelStyle(text: "Go to Home Screen", icon: "house")
+                                ButtonLabel(text: "Go to Home Screen", icon: "house")
                             }
                             .buttonStyle(GlassyButtonStyle(isDisabled: !sharedData.hasAppBeenServed, isMaterialButton: true))
                         } else {
@@ -170,7 +169,7 @@ struct ContentView: View {
                                     downgradeApp(appId: appLinkParsed, ipaTool: ipaTool!)
                                 }
                             }) {
-                                LabelStyle(text: "Downgrade App", icon: "arrow.down")
+                                ButtonLabel(text: "Downgrade App", icon: "arrow.down")
                             }
                             .buttonStyle(GlassyButtonStyle(isMaterialButton: true))
                             
@@ -184,15 +183,12 @@ struct ContentView: View {
                                     exitinator()
                                 }
                             }) {
-                                LabelStyle(text: "Log Out & Exit", icon: "xmark")
+                                ButtonLabel(text: "Log Out & Exit", icon: "xmark")
                             }
                             .buttonStyle(GlassyButtonStyle(color: .red, isMaterialButton: true))
                         }
                     }
-                }
-                .padding(.horizontal, 25)
-                .padding(.top, 30)
-                .background(VariableBlurView(maxBlurRadius: 5, direction: .blurredBottomClearTop).ignoresSafeArea())
+                })
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

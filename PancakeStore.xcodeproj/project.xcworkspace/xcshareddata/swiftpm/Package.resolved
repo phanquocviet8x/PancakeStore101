@@ -1,5 +1,5 @@
 {
-  "originHash" : "d4c4b77f172c05b4c915f71e1c7c6770ebca98c66f1fca80b3c7f15502e3af78",
+  "originHash" : "18891a0ba747470b3462218587901e939c9eed1dbdb945347ed8e8ea28f4d89a",
   "pins" : [
     {
       "identity" : "cocoaasyncsocket",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "a32b391977a17c30fceec0f38933a359dfdaf112",
         "version" : "9.2.0"
+      }
+    },
+    {
+      "identity" : "partyui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jailbreakdotparty/PartyUI",
+      "state" : {
+        "branch" : "main",
+        "revision" : "c8debe9ff2d3cb22fefa583cbfea680088d5ac13"
       }
     },
     {

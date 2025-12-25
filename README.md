@@ -18,3 +18,9 @@
 6. Find the application you're looking for, click the share button, and copy the link.
 7. Go back to PancakeStore and click the clipboard button.
 8. Click "Downgrade App" and wait patiently!
+
+## Troubleshooting
+- **App crashes when trying to log in:** You likely input the wrong 2FA code. Kill the app from the app switcher and try again.
+- **App doesn't progress when clicking "log in":** You likely input the wrong Apple ID and/or Password. Kill the app from the app switcher and try again.
+- **I don't receive a 2FA code when clicking "Authenticate":** Type six random numbers into the field and log in. This likely works because you had logged into MuffinStoreJailed or PancakeStore in the past, even on a different device.
+- **The app crashes when I try to downgrade:** You likely did not purchase (download) the app in the past. Download the app beforehand and remove it, or purchase it from another device. 

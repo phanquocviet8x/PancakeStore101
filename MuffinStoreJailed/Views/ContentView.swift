@@ -51,7 +51,7 @@ struct ContentView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
-                        .modifier(DynamicGlassEffect(shape: AnyShape(.rect(cornerRadius: backgroundCornerRadius())), useBackground: false))
+                        .modifier(DynamicGlassEffect(shape: AnyShape(.rect(cornerRadius: 16)), useBackground: false))
                         .listRowBackground(Color.clear)
                         .listRowInsets(.zeroInsets)
                     }

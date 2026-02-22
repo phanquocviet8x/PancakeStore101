@@ -3,38 +3,18 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-# Auto-detect project/scheme (fallback)
-PROJECT="${PROJECT:-}"
-SCHEME="${SCHEME:-}"
-APP_NAME="${APP_NAME:-}"
+if ! command -v xcodebuild >/dev/null 2>&1; then
+  echo "[-] xcodebuild not found. This script must run on macOS with Xcode installed."
+  exit 1
+fi
+
+PROJECT="${PROJECT:-PancakeStore.xcodeproj}"
+SCHEME="${SCHEME:-PancakeStore}"
+APP_NAME="${APP_NAME:-PancakeStore}"
 CONFIGURATION="${CONFIGURATION:-Release}"
 DERIVED_DATA="${DERIVED_DATA:-$(pwd)/build/DerivedData}"
 OUTDIR="${OUTDIR:-$(pwd)/build/out}"
 MIN_IOS="${MIN_IOS:-16.0}"
-
-if [[ -z "$PROJECT" ]]; then
-  if [[ -d "PancakeStore.xcodeproj" ]]; then
-    PROJECT="PancakeStore.xcodeproj"
-  elif [[ -d "MuffinStoreJailed.xcodeproj" ]]; then
-    PROJECT="MuffinStoreJailed.xcodeproj"
-  else
-    echo "[-] Could not find .xcodeproj. Set PROJECT=YourProject.xcodeproj"
-    exit 1
-  fi
-fi
-
-if [[ -z "$SCHEME" ]]; then
-  # best-guess scheme
-  if [[ "$PROJECT" == "PancakeStore.xcodeproj" ]]; then
-    SCHEME="PancakeStore"
-  else
-    SCHEME="MuffinStoreJailed"
-  fi
-fi
-
-if [[ -z "$APP_NAME" ]]; then
-  APP_NAME="$SCHEME"
-fi
 
 DEBUG=0
 for arg in "$@"; do
@@ -64,7 +44,6 @@ xcodebuild \
 APP_PATH="$DERIVED_DATA/Build/Products/${CONFIGURATION}-iphoneos/${APP_NAME}.app"
 if [[ ! -d "$APP_PATH" ]]; then
   echo "[-] Built .app not found at: $APP_PATH"
-  echo "    You may need to set APP_NAME=... (actual .app name) or SCHEME=..."
   exit 1
 fi
 

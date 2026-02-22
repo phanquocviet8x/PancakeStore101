@@ -1,0 +1,43 @@
+name: Build IPA (Release)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-ipa:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: |
+          xcodebuild -version
+          sw_vers
+
+      - name: Resolve SwiftPM packages
+        run: |
+          xcodebuild -project PancakeStore.xcodeproj -scheme PancakeStore -resolvePackageDependencies
+
+      - name: Build IPA (Release)
+        run: |
+          chmod +x ./build_pancake.sh
+          ./build_pancake.sh
+        env:
+          PROJECT: PancakeStore.xcodeproj
+          SCHEME: PancakeStore
+          APP_NAME: PancakeStore
+          CONFIGURATION: Release
+          MIN_IOS: "16.0"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipa
+          path: build/out/PancakeStore.ipa
+          if-no-files-found: error

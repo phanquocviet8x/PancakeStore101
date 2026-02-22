@@ -377,7 +377,7 @@
 /* Begin XCRemoteSwiftPackageReference section */
 		151F22852EFB8119000D813F /* XCRemoteSwiftPackageReference "PartyUI" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/jailbreakdotparty/PartyUI";
+			repositoryURL = "https://github.com/phanquocviet8x/PartyUI";
 			requirement = {
 				branch = main;
 				kind = branch;

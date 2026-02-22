@@ -182,89 +182,114 @@ class StoreClient {
         return false
     }
 
-    func authenticate(requestCode: Bool = false) -> Bool {
+    func authenticate(requestCode: Bool = false, authCode: String? = nil) -> Bool {
         if self.guid == nil {
             self.guid = generateGuid(appleId: appleId)
         }
-
-        var req = [
+    
+        // 1) Lấy endpoint từ Bag (fix kiểu ipatool-go mới)
+        let endpoint = fetchAuthEndpointFromBag()
+            ?? URL(string: "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate")!
+    
+        // 2) Password: ưu tiên tách authCode, nhưng giữ fallback append cho tương thích
+        let finalPassword: String
+        if let authCode, !authCode.isEmpty {
+            // fallback tương thích kiểu cũ: password + code
+            finalPassword = password + authCode
+        } else {
+            finalPassword = password
+        }
+    
+        var baseReq: [String: String] = [
             "appleId": appleId,
-            "password": password,
+            "password": finalPassword,
             "guid": guid!,
             "rmp": "0",
             "why": "signIn"
         ]
-
-        var url = URL(string: "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate")!
-        var request = URLRequest(url: url)
+    
+        // (thử gửi thêm field authCode nếu server chấp nhận – không gây hại nếu bị ignore)
+        if let authCode, !authCode.isEmpty {
+            baseReq["authCode"] = authCode
+            baseReq["securityCode"] = authCode
+        }
+    
+        var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.allHTTPHeaderFields = [
             "Accept": "*/*",
             "Content-Type": "application/x-www-form-urlencoded",
             "User-Agent": "Configurator/2.17 (Macintosh; OS X 15.2; 24C5089c) AppleWebKit/0620.1.16.11.6"
         ]
-
+    
         var ret = false
-        
+    
         for attempt in 1...4 {
+            var req = baseReq
             req["attempt"] = String(attempt)
-            request.httpBody = try! JSONSerialization.data(withJSONObject: req, options: [])
+    
+            // FIX: encode đúng form-urlencoded (không dùng JSONSerialization)
+            request.httpBody = formURLEncoded(req)
+    
+            let sema = DispatchSemaphore(value: 0)
+            var localRet = false
+    
             let datatask = session.dataTask(with: request) { (data, response, error) in
-                if let error = error {
-                    print("error 1 \(error.localizedDescription)")
+                defer { sema.signal() }
+                if error != nil { return }
+                guard let data else { return }
+    
+                // server trả plist
+                guard let resp = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] else {
                     return
                 }
-                if let response = response {
-//                    print("Response: \(response)")
-                    if let response = response as? HTTPURLResponse {
-                        print("New URL: \(response.url!)")
-                        request.url = response.url
+    
+                if let allowed = resp["m-allowed"] as? Bool, allowed == true {
+                    var download_queue_info = resp["download-queue-info"] as! [String: Any]
+                    let dsid = download_queue_info["dsid"] as! Int
+                    let httpResp = response as? HTTPURLResponse
+                    let storeFront = httpResp?.value(forHTTPHeaderField: "x-set-apple-store-front") ?? ""
+    
+                    self.authHeaders = [
+                        "X-Dsid": String(dsid),
+                        "iCloud-Dsid": String(dsid),
+                        "X-Apple-Store-Front": storeFront,
+                        "X-Token": resp["passwordToken"] as! String
+                    ]
+                    self.authCookies = self.session.configuration.httpCookieStorage?.cookies
+    
+                    let accountInfo = resp["accountInfo"] as! [String: Any]
+                    let address = accountInfo["address"] as! [String: String]
+                    self.accountName = (address["firstName"] ?? "") + " " + (address["lastName"] ?? "")
+    
+                    self.saveAuthInfo()
+                    localRet = true
+                    return
+                } else {
+                    // Nếu requestCode=true: mục tiêu chỉ là “kích hoạt/push 2FA”, đừng spam fail
+                    if requestCode {
+                        localRet = false
+                        return
                     }
-                }
-                if let data = data {
-                    do {
-                        let resp = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as! [String: Any]
-                        if resp["m-allowed"] as! Bool {
-                            print("Authentication successful")
-                            var download_queue_info = resp["download-queue-info"] as! [String: Any]
-                            var dsid = download_queue_info["dsid"] as! Int
-                            var httpResp = response as! HTTPURLResponse
-                            var storeFront = httpResp.value(forHTTPHeaderField: "x-set-apple-store-front")
-                            print("Store front: \(storeFront!)")
-                            self.authHeaders = [
-                                "X-Dsid": String(dsid),
-                                "iCloud-Dsid": String(dsid),
-                                "X-Apple-Store-Front": storeFront!,
-                                "X-Token": resp["passwordToken"] as! String
-                            ]
-                            self.authCookies = self.session.configuration.httpCookieStorage?.cookies
-                            var accountInfo = resp["accountInfo"] as! [String: Any]
-                            var address = accountInfo["address"] as! [String: String]
-                            self.accountName = address["firstName"]! + " " + address["lastName"]!
-                            self.saveAuthInfo()
-                            ret = true
-                        } else {
-                            print("Authentication failed: \(resp["customerMessage"] as! String)")
-                        }
-                    } catch {
-                        print("Error: \(error)")
+                    if let msg = resp["customerMessage"] as? String {
+                        print("Authentication failed: \(msg)")
+                    } else {
+                        print("Authentication failed (unknown reason)")
                     }
                 }
             }
+    
             datatask.resume()
-            while datatask.state != .completed {
-                sleep(1)
-            }
-            if ret {
-                break
-            }
-            if requestCode {
-                ret = false
-                break
-            }
+            sema.wait()
+    
+            ret = localRet
+            if ret { break }
+            if requestCode { break }
         }
+    
         return ret
     }
+    #
 
     func volumeStoreDownloadProduct(appId: String, appVerId: String = "") -> [String: Any] {
         var req = [
@@ -405,7 +430,7 @@ class IPATool {
         storeClient.downloadToPath(url: url, path: path)
         Zip.addCustomFileExtension("ipa")
         sleep(3)
-        let path3 = URL(string: path)!
+        let path3 = URL(fileURLWithPath: path)
         let fileExtension = path3.pathExtension
         let fileName = path3.lastPathComponent
         let directoryName = fileName.replacingOccurrences(of: ".\(fileExtension)", with: "")
@@ -416,7 +441,7 @@ class IPATool {
             try! fm.removeItem(at: destinationUrl)
         }
         
-        let unzipDirectory = try! Zip.quickUnzipFile(URL(string: path)!)
+        let unzipDirectory = try! Zip.quickUnzipFile(URL(fileURLWithPath: path))
         var metadata = downInfo["metadata"] as! [String: Any]
         var metadataPath = unzipDirectory.appendingPathComponent("iTunesMetadata.plist").path
         metadata["apple-id"] = appleId

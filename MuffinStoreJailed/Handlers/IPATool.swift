@@ -385,14 +385,14 @@ class IPATool {
         storeClient = StoreClient(appleId: appleId, password: password)
     }
 
-    func authenticate(requestCode: Bool = false) -> Bool {
-        print("Authenticating to iTunes Store...")
+    func authenticate(requestCode: Bool = false, authCode: String? = nil) -> Bool {
         if !storeClient.tryLoadAuthInfo() {
-            return storeClient.authenticate(requestCode: requestCode)
+            return storeClient.authenticate(requestCode: requestCode, authCode: authCode)
         } else {
             return true
         }
     }
+    
 
     func getVersionIDList(appId: String) -> [String] {
         print("Retrieving download info for appId \(appId)")

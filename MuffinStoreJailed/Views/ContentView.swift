@@ -180,13 +180,14 @@ struct ContentView: View {
                                 } else {
                                     if code.isEmpty {
                                         ipaTool = IPATool(appleId: appleId, password: password)
-                                        ipaTool?.authenticate(requestCode: true)
+                                        _ = ipaTool?.authenticate(requestCode: true, authCode: nil)
                                         hasSent2FACode = true
                                         return
                                     }
-                                    let finalPassword = password + code
-                                    ipaTool = IPATool(appleId: appleId, password: finalPassword)
-                                    let ret = ipaTool?.authenticate()
+                                    
+                                    ipaTool = IPATool(appleId: appleId, password: password)
+                                    let ret = ipaTool?.authenticate(requestCode: false, authCode: code)
+                                    
                                     isAuthenticated = ret ?? false
                                     
                                     if isAuthenticated {

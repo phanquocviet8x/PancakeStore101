@@ -18,6 +18,35 @@ extension Data {
     }
 }
 
+private func formURLEncoded(_ params: [String: String]) -> Data {
+    func esc(_ s: String) -> String {
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
+        return s.addingPercentEncoding(withAllowedCharacters: allowed) ?? s
+    }
+    let body = params
+        .map { "\(esc($0.key))=\(esc($0.value))" }
+        .joined(separator: "&")
+    return Data(body.utf8)
+}
+
+private func findAuthEndpoint(in plist: Any) -> String? {
+    // Dò tìm chuỗi URL có chứa "/authenticate" trong plist Bag (tránh phụ thuộc key cố định)
+    if let s = plist as? String, s.contains("/authenticate") {
+        return s
+    }
+    if let arr = plist as? [Any] {
+        for x in arr {
+            if let hit = findAuthEndpoint(in: x) { return hit }
+        }
+    }
+    if let dict = plist as? [String: Any] {
+        for (_, v) in dict {
+            if let hit = findAuthEndpoint(in: v) { return hit }
+        }
+    }
+    return nil
+}
+
 class SHA1 {
     static func hash(_ data: Data) -> Data {
         var digest = [UInt8](repeating: 0, count: Int(CC_SHA1_DIGEST_LENGTH))
@@ -48,6 +77,49 @@ class StoreClient {
     var accountName: String?
     var authHeaders: [String: String]?
     var authCookies: [HTTPCookie]?
+
+    private var authEndpointURL: URL?   // NEW
+
+    
+
+    private func fetchAuthEndpointFromBag() -> URL? {
+        if let cached = authEndpointURL { return cached }
+
+        let bagURL = URL(string: "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/bag")!
+        var req = URLRequest(url: bagURL)
+        req.httpMethod = "GET"
+        req.setValue("*/*", forHTTPHeaderField: "Accept")
+        req.setValue("Configurator/2.17 (Macintosh; OS X 15.2; 24C5089c) AppleWebKit/0620.1.16.11.6", forHTTPHeaderField: "User-Agent")
+
+        let sema = DispatchSemaphore(value: 0)
+        var resultURL: URL?
+
+        let task = session.dataTask(with: req) { data, response, error in
+            defer { sema.signal() }
+            guard error == nil, let data else { return }
+
+            // Bag thường trả plist
+            if let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil),
+               let endpointStr = findAuthEndpoint(in: plist),
+               let url = URL(string: endpointStr) {
+                resultURL = url
+                return
+            }
+
+            // fallback: nếu không parse được, dùng URL cuối sau redirect (nếu có)
+            if let http = response as? HTTPURLResponse, let final = http.url {
+                resultURL = final
+            }
+        }
+        task.resume()
+        sema.wait()
+
+        if resultURL != nil {
+            self.authEndpointURL = resultURL
+        }
+        return resultURL
+    }
+
 
     init(appleId: String, password: String) {
         session = URLSession.shared
